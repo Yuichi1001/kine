@@ -95,17 +95,17 @@ var (
 		"/limitranges/", "/namespaces/", "/nodes/", "/persistentvolumeclaims/", "/persistentvolumes/",
 		"/pods/", "/podtemplates/", "/controllers/", "/resourcequotas/", "/secrets/",
 		"/serviceaccounts/", "/services/specs/", "/mutatingwebhookconfigurations/", "/validatingadmissionpolicies/", "/validatingadmissionpolicybindings/",
-		"/validatingwebhookconfigurations/" /*"/customresourcedefinitions/", "/apiservices/",*/, "/controllerrevisions/", "/daemonsets/",
+		"/validatingwebhookconfigurations/", "/customresourcedefinitions/", "/apiservices/", "/controllerrevisions/", "/daemonsets/",
 		"/deployments/", "/replicasets/", "/statefulsets/",
 		"/horizontalpodautoscalers/",
 		"/cronjobs/", "/jobs/", "/certificatesigningrequests/", "/leases/", "/endpointslices/",
-		"/flowschemas/", "/prioritylevelconfigurations/", "/helmchartconfigs/", /*"/helmcharts/", "/addons/",*/
+		"/flowschemas/", "/prioritylevelconfigurations/", "/helmchartconfigs/", "/helmcharts/", "/addons/",
 		"/etcdsnapshotfiles/", "/ingressclasses/", "/ingress/", "/networkpolicies/", "/runtimeclasses/",
 		"/poddisruptionbudgets/", "/clusterrolebindings/", "/clusterroles/", "/rolebindings/", "/roles/",
 		"/priorityclasses/", "/csidrivers/", "/csinodes/", "/csistoragecapacities/", "/storageclasses/",
 		"/volumeattachments/", "/traefik.containo.us/ingressroutes/", "/traefik.containo.us/ingressroutetcps/", "/traefik.containo.us/ingressrouteudps/", "/traefik.containo.us/middlewares/",
 		"/traefik.containo.us/middlewaretcps/", "/traefik.containo.us/serverstransports/", "/traefik.containo.us/tlsoptions/", "/traefik.containo.us/tlsstores/", "/traefik.containo.us/traefikservices/",
-		/*"/traefik.io/ingressroutes/", */ "/traefik.io/ingressroutetcps/", "/traefik.io/ingressrouteudps/", "/traefik.io/middlewares/", "/traefik.io/middlewaretcps/",
+		"/traefik.io/ingressroutes/", "/traefik.io/ingressroutetcps/", "/traefik.io/ingressrouteudps/", "/traefik.io/middlewares/", "/traefik.io/middlewaretcps/",
 		"/traefik.io/serverstransports/", "/serverstransporttcps/", "/traefik.io/tlsoptions/", "/traefik.io/tlsstores/", "/traefik.io/traefikservices/",
 	}
 
@@ -765,15 +765,11 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		gvk := &schema.GroupVersionKind{} // 替换为实际的 GVK
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
 		if err != nil {
-			fmt.Println("Failed to decode protobuf: %v", err)
-			/*data := make([]byte, hex.DecodedLen(len(value)))
-			_, err := hex.Decode(data, value[2:])
-			if err != nil {
-				fmt.Println(string(value))
-				log.Fatalf("Failed to decode hex data: %v", err)
-			}*/
-			jsonData = value
-			fmt.Println(string(jsonData))
+			if err.Error() == "provided data does not appear to be a protobuf message, expected prefix [107 56 115 0]" {
+				jsonData = value
+			} else {
+				fmt.Println("Failed to decode protobuf: %v", err)
+			}
 		} else {
 			// 将解码后的对象转换为 JSON 格式
 			jsonData, err = json.MarshalIndent(obj, "", "  ")
