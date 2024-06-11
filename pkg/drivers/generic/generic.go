@@ -770,6 +770,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 			data := make([]byte, hex.DecodedLen(len(value)))
 			_, err := hex.Decode(data, value[2:])
 			if err != nil {
+				fmt.Println(string(value))
 				log.Fatalf("Failed to decode hex data: %v", err)
 			}
 			jsonData = data
