@@ -92,7 +92,7 @@ var (
 
 	resourcesTemplate = []string{
 		"/configmaps/", "/endpoints/", "/events/",
-		"/limitranges/", "/namespaces/", "/nodes/", "/persistentvolumeclaims/", "/persistentvolumes/",
+		"/limitranges/", "/namespaces/", "/minions/", "/persistentvolumeclaims/", "/persistentvolumes/",
 		"/pods/", "/podtemplates/", "/controllers/", "/resourcequotas/", "/secrets/",
 		"/serviceaccounts/", "/services/specs/", "/mutatingwebhookconfigurations/", "/validatingadmissionpolicies/", "/validatingadmissionpolicybindings/",
 		"/validatingwebhookconfigurations/", "/customresourcedefinitions/", "/apiservices/", "/controllerrevisions/", "/daemonsets/",
@@ -126,25 +126,6 @@ var (
 		"/traefik.containo.us/middlewaretcps/": "middlewaretcps", "/traefik.containo.us/serverstransports/": "serverstransports", "/traefik.containo.us/tlsoptions/": "tlsoptions", "/traefik.containo.us/tlsstores/": "tlsstores", "/traefik.containo.us/traefikservices/": "traefikservices",
 		"/traefik.io/ingressroutes/": "ingressroutes", "/traefik.io/ingressroutetcps/": "ingressroutetcps", "/traefik.io/ingressrouteudps/": "ingressrouteudps", "/traefik.io/middlewares/": "middlewares", "/traefik.io/middlewaretcps/": "middlewaretcps",
 		"/traefik.io/serverstransports/": "serverstransports", "/serverstransporttcps/": "serverstransporttcps", "/traefik.io/tlsoptions/": "tlsoptions", "/traefik.io/tlsstores/": "tlsstores", "/traefik.io/traefikservices/": "traefikservices",
-	}
-
-	apiGroupMap = map[string]string{
-		"/componentstatuses/": "core", "/configmaps/": "core", "/endpoints/": "core", "/events/": "core",
-		"/limitranges/": "core", "/namespaces/": "core", "/minions/": "core", "/persistentvolumeclaims/": "core", "/persistentvolumes/": "core",
-		"/pods/": "core", "/podtemplates/": "core", "/controllers/": "core", "/resourcequotas/": "core", "/secrets/": "core",
-		"/serviceaccounts/": "core", "/services/specs/": "core", "/mutatingwebhookconfigurations/": "admissionregistration.k8s.io", "/validatingadmissionpolicies/": "admissionregistration.k8s.io", "/validatingadmissionpolicybindings/": "admissionregistration.k8s.io",
-		"/validatingwebhookconfigurations/": "admissionregistration.k8s.io", "/customresourcedefinitions/": "apiextensions.k8s.io", "/apiservices/": "apiextensions.k8s.io", "/controllerrevisions/": "apps", "/daemonsets/": "apps",
-		"/deployments/": "apps", "/replicasets/": "apps", "/statefulsets/": "apps",
-		"/horizontalpodautoscalers/": "autoscaling",
-		"/cronjobs/":                 "batch", "/jobs/": "batch", "/certificatesigningrequests/": "certificates.k8s.io", "/leases/": "coordination.k8s.io", "/endpointslices/": "discovery.k8s.io",
-		"/flowschemas/": "flowcontrol.apiserver.k8s.io", "/prioritylevelconfigurations/": "flowcontrol.apiserver.k8s.io", "/helmchartconfigs/": "helm.cattle.io", "/helmcharts/": "helm.cattle.io", "/addons/": "k3s.cattle.io",
-		"/etcdsnapshotfiles/": "k3s.cattle.io", "/ingressclasses/": "networking.k8s.io", "/ingress/": "networking.k8s.io", "/networkpolicies/": "networking.k8s.io", "/runtimeclasses/": "node.k8s.io",
-		"/poddisruptionbudgets/": "policy", "/clusterrolebindings/": "rbac.authorization.k8s.io", "/clusterroles/": "rbac.authorization.k8s.io", "/rolebindings/": "rbac.authorization.k8s.io", "/roles/": "rbac.authorization.k8s.io",
-		"/priorityclasses/": "scheduling.k8s.io", "/csidrivers/": "storage.k8s.io", "/csinodes/": "storage.k8s.io", "/csistoragecapacities/": "storage.k8s.io", "/storageclasses/": "storage.k8s.io",
-		"/volumeattachments/": "storage.k8s.io", "/traefik.containo.us/ingressroutes/": "traefik.containo.us", "/traefik.containo.us/ingressroutetcps/": "traefik.containo.us", "/traefik.containo.us/ingressrouteudps/": "traefik.containo.us", "/traefik.containo.us/middlewares/": "traefik.containo.us",
-		"/traefik.containo.us/middlewaretcps/": "traefik.containo.us", "/traefik.containo.us/serverstransports/": "traefik.containo.us", "/traefik.containo.us/tlsoptions/": "traefik.containo.us", "/traefik.containo.us/tlsstores/": "traefik.containo.us", "/traefik.containo.us/traefikservices/": "traefik.containo.us",
-		"/traefik.io/ingressroutes/": "traefik.io", "/traefik.io/ingressroutetcps/": "traefik.io", "/traefik.io/ingressrouteudps/": "traefik.io", "/traefik.io/middlewares/": "traefik.io", "/traefik.io/middlewaretcps/": "traefik.io",
-		"/traefik.io/serverstransports/": "traefik.io", "/serverstransporttcps/": "traefik.io", "/traefik.io/tlsoptions/": "traefik.io", "/traefik.io/tlsstores/": "traefik.io", "/traefik.io/traefikservices/": "traefik.io",
 	}
 )
 
@@ -765,6 +746,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		gvk := &schema.GroupVersionKind{} // 替换为实际的 GVK
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
 		if err != nil {
+			//如果报错如下，则证明数据不需要从protobuf进行解码
 			if err.Error() == "provided data does not appear to be a protobuf message, expected prefix [107 56 115 0]" {
 				jsonData = value
 			} else {
