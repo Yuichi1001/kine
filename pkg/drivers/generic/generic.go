@@ -3,11 +3,13 @@ package generic
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	admissionregistrationv1alpha1 "k8s.io/api/admissionregistration/v1alpha1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -425,6 +427,9 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 	if err := admissionregistrationv1.AddToScheme(myScheme); err != nil {
 		log.Fatalf("Failed to add admissionregistration/v1 types to scheme: %v", err)
 	}
+	if err := admissionregistrationv1alpha1.AddToScheme(myScheme); err != nil {
+		log.Fatalf("Failed to add admissionregistration/v1alpha1 types to scheme: %v", err)
+	}
 	if err := admissionregistrationv1beta1.AddToScheme(myScheme); err != nil {
 		log.Fatalf("Failed to add admissionregistration/v1beta1 types to scheme: %v", err)
 	}
@@ -718,6 +723,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		}
 	}
 
+	var jsonData []byte
 	resourceName := ""
 	namespace := ""
 	apigroup := ""
@@ -760,13 +766,19 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		gvk := &schema.GroupVersionKind{} // 替换为实际的 GVK
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
 		if err != nil {
-			log.Fatalf("Failed to decode protobuf: %v", err)
-		}
-
-		// 将解码后的对象转换为 JSON 格式
-		jsonData, err := json.MarshalIndent(obj, "", "  ")
-		if err != nil {
-			log.Fatalf("Failed to marshal JSON: %v", err)
+			fmt.Println("Failed to decode protobuf: %v", err)
+			data := make([]byte, hex.DecodedLen(len(encodedData)))
+			_, err := hex.Decode(data, encodedData[2:])
+			if err != nil {
+				log.Fatalf("Failed to decode hex data: %v", err)
+			}
+			jsonData = data
+		} else {
+			// 将解码后的对象转换为 JSON 格式
+			jsonData, err = json.MarshalIndent(obj, "", "  ")
+			if err != nil {
+				fmt.Println("Failed to marshal JSON: %v", err)
+			}
 		}
 
 		apigroup, err = extractValue(string(jsonData), "apiVersion")
