@@ -767,7 +767,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
 		if err != nil {
 			fmt.Println("Failed to decode protobuf: %v", err)
-			data := make([]byte, hex.DecodedLen(len(encodedData)))
+			data := make([]byte, hex.DecodedLen(len(value)))
 			_, err := hex.Decode(data, encodedData[2:])
 			if err != nil {
 				log.Fatalf("Failed to decode hex data: %v", err)
