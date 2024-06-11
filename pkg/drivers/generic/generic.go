@@ -3,7 +3,6 @@ package generic
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -767,13 +766,14 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
 		if err != nil {
 			fmt.Println("Failed to decode protobuf: %v", err)
-			data := make([]byte, hex.DecodedLen(len(value)))
+			/*data := make([]byte, hex.DecodedLen(len(value)))
 			_, err := hex.Decode(data, value[2:])
 			if err != nil {
 				fmt.Println(string(value))
 				log.Fatalf("Failed to decode hex data: %v", err)
-			}
-			jsonData = data
+			}*/
+			jsonData = value
+			fmt.Println(string(jsonData))
 		} else {
 			// 将解码后的对象转换为 JSON 格式
 			jsonData, err = json.MarshalIndent(obj, "", "  ")
