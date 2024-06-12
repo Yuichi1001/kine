@@ -168,21 +168,19 @@ func setup(db *sql.DB) error {
 	// 创建特定资源的表和索引
 	// 注册所有的api-resources,为他们创建表格
 	resources := []string{
-		"configmaps", "endpoints", "events",
-		"limitranges", "namespaces", "nodes", "persistentvolumeclaims", "persistentvolumes",
-		"pods", "podtemplates", "replicationcontrollers", "resourcequotas", "secrets",
-		"serviceaccounts", "services", "mutatingwebhookconfigurations", "validatingadmissionpolicies", "validatingadmissionpolicybindings",
-		"validatingwebhookconfigurations", "customresourcedefinitions", "apiservices", "controllerrevisions", "daemonsets",
-		"deployments", "replicasets", "statefulsets",
-		"horizontalpodautoscalers",
-		"cronjobs", "jobs", "certificatesigningrequests", "leases", "endpointslices",
-		"flowschemas", "prioritylevelconfigurations", "helmchartconfigs", "helmcharts", "addons",
-		"etcdsnapshotfiles", "ingressclasses", "ingress", "networkpolicies", "runtimeclasses",
-		"poddisruptionbudgets", "clusterrolebindings", "clusterroles", "rolebindings", "roles",
-		"priorityclasses", "csidrivers", "csinodes", "csistoragecapacities", "storageclasses",
-		"volumeattachments", "ingressroutes", "ingressroutetcps", "ingressrouteudps", "middlewares",
-		"middlewaretcps", "serverstransports", "tlsoptions", "tlsstores", "traefikservices",
-		"serverstransporttcps",
+		"configmaps", "endpoints", "events", "limitranges", "namespaces",
+		"nodes", "persistentvolumeclaims", "persistentvolumes", "pods", "podtemplates",
+		"replicationcontrollers", "resourcequotas", "secrets", "serviceaccounts", "services",
+		"mutatingwebhookconfigurations", "validatingadmissionpolicies", "validatingadmissionpolicybindings", "validatingwebhookconfigurations", "customresourcedefinitions",
+		"apiservices", "controllerrevisions", "daemonsets", "deployments", "replicasets",
+		"statefulsets", "horizontalpodautoscalers", "cronjobs", "jobs", "certificatesigningrequests",
+		"leases", "endpointslices", "flowschemas", "prioritylevelconfigurations", "helmchartconfigs",
+		"helmcharts", "addons", "etcdsnapshotfiles", "ingressclasses", "ingress",
+		"networkpolicies", "runtimeclasses", "poddisruptionbudgets", "clusterrolebindings", "clusterroles",
+		"rolebindings", "roles", "priorityclasses", "csidrivers", "csinodes",
+		"csistoragecapacities", "storageclasses", "volumeattachments", "ingressroutes", "ingressroutetcps",
+		"ingressrouteudps", "middlewares", "middlewaretcps", "serverstransports", "tlsoptions",
+		"tlsstores", "traefikservices", "serverstransporttcps",
 	}
 	for _, resource := range resources {
 		err := createResourceTable(db, resource)

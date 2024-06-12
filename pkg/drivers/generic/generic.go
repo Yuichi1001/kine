@@ -91,41 +91,39 @@ var (
 	tableName = ""
 
 	resourcesTemplate = []string{
-		"/configmaps/", "/endpoints/", "/events/",
-		"/limitranges/", "/namespaces/", "/minions/", "/persistentvolumeclaims/", "/persistentvolumes/",
-		"/pods/", "/podtemplates/", "/controllers/", "/resourcequotas/", "/secrets/",
-		"/serviceaccounts/", "/services/specs/", "/mutatingwebhookconfigurations/", "/validatingadmissionpolicies/", "/validatingadmissionpolicybindings/",
-		"/validatingwebhookconfigurations/", "/customresourcedefinitions/", "/apiservices/", "/controllerrevisions/", "/daemonsets/",
-		"/deployments/", "/replicasets/", "/statefulsets/",
-		"/horizontalpodautoscalers/",
-		"/cronjobs/", "/jobs/", "/certificatesigningrequests/", "/leases/", "/endpointslices/",
-		"/flowschemas/", "/prioritylevelconfigurations/", "/helmchartconfigs/", "/helmcharts/", "/addons/",
-		"/etcdsnapshotfiles/", "/ingressclasses/", "/ingress/", "/networkpolicies/", "/runtimeclasses/",
-		"/poddisruptionbudgets/", "/clusterrolebindings/", "/clusterroles/", "/rolebindings/", "/roles/",
-		"/priorityclasses/", "/csidrivers/", "/csinodes/", "/csistoragecapacities/", "/storageclasses/",
-		"/volumeattachments/", "/traefik.containo.us/ingressroutes/", "/traefik.containo.us/ingressroutetcps/", "/traefik.containo.us/ingressrouteudps/", "/traefik.containo.us/middlewares/",
-		"/traefik.containo.us/middlewaretcps/", "/traefik.containo.us/serverstransports/", "/traefik.containo.us/tlsoptions/", "/traefik.containo.us/tlsstores/", "/traefik.containo.us/traefikservices/",
-		"/traefik.io/ingressroutes/", "/traefik.io/ingressroutetcps/", "/traefik.io/ingressrouteudps/", "/traefik.io/middlewares/", "/traefik.io/middlewaretcps/",
-		"/traefik.io/serverstransports/", "/serverstransporttcps/", "/traefik.io/tlsoptions/", "/traefik.io/tlsstores/", "/traefik.io/traefikservices/",
+		"/configmaps/", "/endpoints/", "/events/", "/limitranges/", "/namespaces/",
+		"/minions/", "/persistentvolumeclaims/", "/persistentvolumes/", "/pods/", "/podtemplates/",
+		"/controllers/", "/resourcequotas/", "/secrets/", "/serviceaccounts/", "/services/specs/",
+		"/mutatingwebhookconfigurations/", "/validatingadmissionpolicies/", "/validatingadmissionpolicybindings/", "/validatingwebhookconfigurations/", "/customresourcedefinitions/",
+		"/apiservices/", "/controllerrevisions/", "/daemonsets/", "/deployments/", "/replicasets/",
+		"/statefulsets/", "/horizontalpodautoscalers/", "/cronjobs/", "/jobs/", "/certificatesigningrequests/",
+		"/leases/", "/endpointslices/", "/flowschemas/", "/prioritylevelconfigurations/", "/helmchartconfigs/",
+		"/helmcharts/", "/addons/", "/etcdsnapshotfiles/", "/ingressclasses/", "/ingress/",
+		"/networkpolicies/", "/runtimeclasses/", "/poddisruptionbudgets/", "/clusterrolebindings/", "/clusterroles/",
+		"/rolebindings/", "/roles/", "/priorityclasses/", "/csidrivers/", "/csinodes/",
+		"/csistoragecapacities/", "/storageclasses/", "/volumeattachments/", "/traefik.containo.us/ingressroutes/", "/traefik.containo.us/ingressroutetcps/",
+		"/traefik.containo.us/ingressrouteudps/", "/traefik.containo.us/middlewares/", "/traefik.containo.us/middlewaretcps/", "/traefik.containo.us/serverstransports/", "/traefik.containo.us/tlsoptions/",
+		"/traefik.containo.us/tlsstores/", "/traefik.containo.us/traefikservices/", "/traefik.io/ingressroutes/", "/traefik.io/ingressroutetcps/", "/traefik.io/ingressrouteudps/",
+		"/traefik.io/middlewares/", "/traefik.io/middlewaretcps/", "/traefik.io/serverstransports/", "/serverstransporttcps/", "/traefik.io/tlsoptions/",
+		"/traefik.io/tlsstores/", "/traefik.io/traefikservices/",
 	}
 
 	tableMap = map[string]string{
-		"/componentstatuses/": "componentstatuses", "/configmaps/": "configmaps", "/endpoints/": "endpoints", "/events/": "events",
-		"/limitranges/": "limitranges", "/namespaces/": "namespaces", "/minions/": "nodes", "/persistentvolumeclaims/": "persistentvolumeclaims", "/persistentvolumes/": "persistentvolumes",
-		"/pods/": "pods", "/podtemplates/": "podtemplates", "/controllers/": "replicationcontrollers", "/resourcequotas/": "resourcequotas", "/secrets/": "secrets",
-		"/serviceaccounts/": "serviceaccounts", "/services/specs/": "services", "/mutatingwebhookconfigurations/": "mutatingwebhookconfigurations", "/validatingadmissionpolicies/": "validatingadmissionpolicies", "/validatingadmissionpolicybindings/": "validatingadmissionpolicybindings",
-		"/validatingwebhookconfigurations/": "validatingwebhookconfigurations", "/customresourcedefinitions/": "customresourcedefinitions", "/apiservices/": "apiservices", "/controllerrevisions/": "controllerrevisions", "/daemonsets/": "daemonsets",
-		"/deployments/": "deployments", "/replicasets/": "replicasets", "/statefulsets/": "statefulsets",
-		"/horizontalpodautoscalers/": "horizontalpodautoscalers",
-		"/cronjobs/":                 "cronjobs", "/jobs/": "jobs", "/certificatesigningrequests/": "certificatesigningrequests", "/leases/": "leases", "/endpointslices/": "endpointslices",
-		"/flowschemas/": "flowschemas", "/prioritylevelconfigurations/": "prioritylevelconfigurations", "/helmchartconfigs/": "helmchartconfigs", "/helmcharts/": "helmcharts", "/addons/": "addons",
-		"/etcdsnapshotfiles/": "etcdsnapshotfiles", "/ingressclasses/": "ingressclasses", "/ingress/": "ingress", "/networkpolicies/": "networkpolicies", "/runtimeclasses/": "runtimeclasses",
-		"/poddisruptionbudgets/": "poddisruptionbudgets", "/clusterrolebindings/": "clusterrolebindings", "/clusterroles/": "clusterroles", "/rolebindings/": "rolebindings", "/roles/": "roles",
-		"/priorityclasses/": "priorityclasses", "/csidrivers/": "csidrivers", "/csinodes/": "csinodes", "/csistoragecapacities/": "csistoragecapacities", "/storageclasses/": "storageclasses",
-		"/volumeattachments/": "volumeattachments", "/traefik.containo.us/ingressroutes/": "ingressroutes", "/traefik.containo.us/ingressroutetcps/": "ingressroutetcps", "/traefik.containo.us/ingressrouteudps/": "ingressrouteudps", "/traefik.containo.us/middlewares/": "middlewares",
-		"/traefik.containo.us/middlewaretcps/": "middlewaretcps", "/traefik.containo.us/serverstransports/": "serverstransports", "/traefik.containo.us/tlsoptions/": "tlsoptions", "/traefik.containo.us/tlsstores/": "tlsstores", "/traefik.containo.us/traefikservices/": "traefikservices",
-		"/traefik.io/ingressroutes/": "ingressroutes", "/traefik.io/ingressroutetcps/": "ingressroutetcps", "/traefik.io/ingressrouteudps/": "ingressrouteudps", "/traefik.io/middlewares/": "middlewares", "/traefik.io/middlewaretcps/": "middlewaretcps",
-		"/traefik.io/serverstransports/": "serverstransports", "/serverstransporttcps/": "serverstransporttcps", "/traefik.io/tlsoptions/": "tlsoptions", "/traefik.io/tlsstores/": "tlsstores", "/traefik.io/traefikservices/": "traefikservices",
+		"/configmaps/": "configmaps", "/endpoints/": "endpoints", "/events/": "events", "/limitranges/": "limitranges", "/namespaces/": "namespaces",
+		"/minions/": "nodes", "/persistentvolumeclaims/": "persistentvolumeclaims", "/persistentvolumes/": "persistentvolumes", "/pods/": "pods", "/podtemplates/": "podtemplates",
+		"/controllers/": "replicationcontrollers", "/resourcequotas/": "resourcequotas", "/secrets/": "secrets", "/serviceaccounts/": "serviceaccounts", "/services/specs/": "services",
+		"/mutatingwebhookconfigurations/": "mutatingwebhookconfigurations", "/validatingadmissionpolicies/": "validatingadmissionpolicies", "/validatingadmissionpolicybindings/": "validatingadmissionpolicybindings", "/validatingwebhookconfigurations/": "validatingwebhookconfigurations", "/customresourcedefinitions/": "customresourcedefinitions",
+		"/apiservices/": "apiservices", "/controllerrevisions/": "controllerrevisions", "/daemonsets/": "daemonsets", "/deployments/": "deployments", "/replicasets/": "replicasets",
+		"/statefulsets/": "statefulsets", "/horizontalpodautoscalers/": "horizontalpodautoscalers", "/cronjobs/": "cronjobs", "/jobs/": "jobs", "/certificatesigningrequests/": "certificatesigningrequests",
+		"/leases/": "leases", "/endpointslices/": "endpointslices", "/flowschemas/": "flowschemas", "/prioritylevelconfigurations/": "prioritylevelconfigurations", "/helmchartconfigs/": "helmchartconfigs",
+		"/helmcharts/": "helmcharts", "/addons/": "addons", "/etcdsnapshotfiles/": "etcdsnapshotfiles", "/ingressclasses/": "ingressclasses", "/ingress/": "ingress",
+		"/networkpolicies/": "networkpolicies", "/runtimeclasses/": "runtimeclasses", "/poddisruptionbudgets/": "poddisruptionbudgets", "/clusterrolebindings/": "clusterrolebindings", "/clusterroles/": "clusterroles",
+		"/rolebindings/": "rolebindings", "/roles/": "roles", "/priorityclasses/": "priorityclasses", "/csidrivers/": "csidrivers", "/csinodes/": "csinodes",
+		"/csistoragecapacities/": "csistoragecapacities", "/storageclasses/": "storageclasses", "/volumeattachments/": "volumeattachments", "/traefik.containo.us/ingressroutes/": "ingressroutes", "/traefik.containo.us/ingressroutetcps/": "ingressroutetcps",
+		"/traefik.containo.us/ingressrouteudps/": "ingressrouteudps", "/traefik.containo.us/middlewares/": "middlewares", "/traefik.containo.us/middlewaretcps/": "middlewaretcps", "/traefik.containo.us/serverstransports/": "serverstransports", "/traefik.containo.us/tlsoptions/": "tlsoptions",
+		"/traefik.containo.us/tlsstores/": "tlsstores", "/traefik.containo.us/traefikservices/": "traefikservices", "/traefik.io/ingressroutes/": "ingressroutes", "/traefik.io/ingressroutetcps/": "ingressroutetcps", "/traefik.io/ingressrouteudps/": "ingressrouteudps",
+		"/traefik.io/middlewares/": "middlewares", "/traefik.io/middlewaretcps/": "middlewaretcps", "/traefik.io/serverstransports/": "serverstransports", "/serverstransporttcps/": "serverstransporttcps", "/traefik.io/tlsoptions/": "tlsoptions",
+		"/traefik.io/tlsstores/": "tlsstores", "/traefik.io/traefikservices/": "traefikservices",
 	}
 )
 
@@ -330,6 +328,42 @@ func openAndTest(driverName, dataSourceName string) (*sql.DB, error) {
 	return db, nil
 }
 
+func addSchemes(scheme *runtime.Scheme) {
+	schemes := []struct {
+		name string
+		add  func(*runtime.Scheme) error
+	}{
+		{"core/v1", corev1.AddToScheme},
+		{"apps/v1", appsv1.AddToScheme},
+		{"batch/v1", batchv1.AddToScheme},
+		{"rbac/v1", rbacv1.AddToScheme},
+		{"apiextensions/v1", apiextensionsv1.AddToScheme},
+		{"apiregistration/v1", apiregistrationv1.AddToScheme},
+		{"flowcontrol/v1", flowcontrolv1.AddToScheme},
+		{"coordination/v1", coordinationv1.AddToScheme},
+		{"discovery/v1", discoveryv1.AddToScheme},
+		{"discovery/v1beta1", discoverybeta1.AddToScheme},
+		{"scheduling/v1", schedulingv1.AddToScheme},
+		{"storage/v1", storagev1.AddToScheme},
+		{"admissionregistration/v1", admissionregistrationv1.AddToScheme},
+		{"admissionregistration/v1alpha1", admissionregistrationv1alpha1.AddToScheme},
+		{"admissionregistration/v1beta1", admissionregistrationv1beta1.AddToScheme},
+		{"authentication/v1", authenticationv1.AddToScheme},
+		{"authorization/v1", authorizationv1.AddToScheme},
+		{"autoscaling/v2", autoscalingv2.AddToScheme},
+		{"certificates/v1", certificatesv1.AddToScheme},
+		{"networking/v1", networkingv1.AddToScheme},
+		{"node/v1", nodev1.AddToScheme},
+		{"policy/v1", policyv1.AddToScheme},
+	}
+
+	for _, s := range schemes {
+		if err := s.add(scheme); err != nil {
+			log.Fatalf("Failed to add %s types to scheme: %v", s.name, err)
+		}
+	}
+}
+
 func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig ConnectionPoolConfig, paramCharacter string, numbered bool, metricsRegisterer prometheus.Registerer) (*Generic, error) {
 	var (
 		db  *sql.DB
@@ -360,80 +394,8 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 	// 初始化 Scheme
 	myScheme := runtime.NewScheme()
 
-	// 注册 Kubernetes 核心对象
-	if err := corev1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add Kubernetes core types to scheme: %v", err)
-	}
-
-	// 注册 Kubernetes apps/v1 对象
-	if err := appsv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add Kubernetes apps/v1 types to scheme: %v", err)
-	}
-
-	// 注册 Kubernetes batch/v1 对象
-	if err := batchv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add Kubernetes batch/v1 types to scheme: %v", err)
-	}
-
-	// 注册 Kubernetes rbac/v1 对象
-	if err := rbacv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add Kubernetes rbac/v1 types to scheme: %v", err)
-	}
-
-	if err := apiextensionsv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add apiextensions/v1 types to scheme: %v", err)
-	}
-	if err := apiregistrationv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add apiregistration/v1 types to scheme: %v", err)
-	}
-	if err := flowcontrolv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add flowcontrol/v1 types to scheme: %v", err)
-	}
-	if err := coordinationv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add coordination/v1 types to scheme: %v", err)
-	}
-	if err := discoveryv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add discovery/v1 types to scheme: %v", err)
-	}
-	if err := discoverybeta1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add discovery/v1beta1 types to scheme: %v", err)
-	}
-	if err := schedulingv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add scheduling/v1 types to scheme: %v", err)
-	}
-	if err := storagev1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add storage/v1 types to scheme: %v", err)
-	}
-	if err := admissionregistrationv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add admissionregistration/v1 types to scheme: %v", err)
-	}
-	if err := admissionregistrationv1alpha1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add admissionregistration/v1alpha1 types to scheme: %v", err)
-	}
-	if err := admissionregistrationv1beta1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add admissionregistration/v1beta1 types to scheme: %v", err)
-	}
-	if err := authenticationv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add authentication/v1 types to scheme: %v", err)
-	}
-	if err := authorizationv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add authorization/v1 types to scheme: %v", err)
-	}
-	if err := autoscalingv2.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add autoscaling/v2 types to scheme: %v", err)
-	}
-	if err := certificatesv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add certificates/v1 types to scheme: %v", err)
-	}
-	if err := networkingv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add networking/v1 types to scheme: %v", err)
-	}
-	if err := nodev1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add node/v1 types to scheme: %v", err)
-	}
-	if err := policyv1.AddToScheme(myScheme); err != nil {
-		log.Fatalf("Failed to add policy/v1 types to scheme: %v", err)
-	}
+	//注册各个对象到scheme中
+	addSchemes(myScheme)
 
 	// 初始化 CodecFactory
 	codecFactory := serializer.NewCodecFactory(myScheme)
@@ -740,8 +702,6 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 
 		encodedData := value
 
-		fmt.Println("正在解码：", tableName)
-
 		// 解码 Protobuf 数据
 		gvk := &schema.GroupVersionKind{} // 替换为实际的 GVK
 		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
@@ -750,13 +710,14 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 			if err.Error() == "provided data does not appear to be a protobuf message, expected prefix [107 56 115 0]" {
 				jsonData = value
 			} else {
-				fmt.Println("Failed to decode protobuf: %v", err)
+				fmt.Println("正在解码：", tableName)
+				log.Fatalf("Failed to decode protobuf: %v", err)
 			}
 		} else {
 			// 将解码后的对象转换为 JSON 格式
 			jsonData, err = json.MarshalIndent(obj, "", "  ")
 			if err != nil {
-				fmt.Println("Failed to marshal JSON: %v", err)
+				log.Fatalf("Failed to marshal JSON: %v", err)
 			}
 		}
 
