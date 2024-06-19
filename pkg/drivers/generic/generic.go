@@ -162,6 +162,8 @@ type Generic struct {
 	ResourcesDeleteSQL    string
 	ResourcesInsertSQL    string
 	ResourcesUpdateSQL    string
+	param                 string
+	numbered              bool
 	Retry                 ErrRetry
 	InsertRetry           ErrRetry
 	TranslateErr          TranslateErr
@@ -461,14 +463,16 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 		FillSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
 			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
 
-		ResourcesDeleteSQL: q(fmt.Sprintf(`
-			DELETE FROM (%s) WHERE name = ?`, tableName), paramCharacter, numbered),
+		ResourcesDeleteSQL: `
+			DELETE FROM %s WHERE name = ?`,
 
 		ResourcesInsertSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
 			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
 
 		ResourcesUpdateSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
 			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
+		param:    paramCharacter,
+		numbered: numbered,
 	}, err
 }
 
@@ -709,7 +713,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		// 执行删除
 		_, err = d.execute(ctx, formattedDeleteQuery, resourceName)*/
 
-		_, err = d.execute(ctx, d.ResourcesDeleteSQL, resourceName)
+		_, err = d.execute(ctx, q(fmt.Sprintf(d.ResourcesDeleteSQL, tableName), d.param, d.numbered), resourceName)
 		if err != nil {
 			fmt.Println(d.ResourcesDeleteSQL, resourceName)
 			panic(err)
