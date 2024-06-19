@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	admissionregistrationv1alpha1 "k8s.io/api/admissionregistration/v1alpha1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -463,14 +462,13 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 		FillSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
 			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
 
-		ResourcesDeleteSQL: `
-			DELETE FROM %s WHERE name = ?`,
+		ResourcesDeleteSQL: `DELETE FROM %s WHERE name = ?`,
 
-		ResourcesInsertSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
-			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
+		ResourcesInsertSQL: `INSERT INTO %s (name, namespace, apigroup, region, data, created_time, update_time)
+			values(?, ?, ?, ?, ?, ?, ?)`,
 
-		ResourcesUpdateSQL: q(`INSERT INTO kine(id, name, created, deleted, create_revision, prev_revision, lease, value, old_value)
-			values(?, ?, ?, ?, ?, ?, ?, ?, ?)`, paramCharacter, numbered),
+		ResourcesUpdateSQL: `UPDATE %s SET namespace = ?, region = ?,data = ?, update_time = ? WHERE name = ?`,
+
 		param:    paramCharacter,
 		numbered: numbered,
 	}, err
@@ -702,20 +700,10 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 	}
 
 	if dVal == 1 {
-		// 定义删除语句
-
-		/*deleteQuery := `
-						DELETE FROM %s WHERE name = $1
-						`
-
-		formattedDeleteQuery := fmt.Sprintf(deleteQuery, pq.QuoteIdentifier(tableName))
-
-		// 执行删除
-		_, err = d.execute(ctx, formattedDeleteQuery, resourceName)*/
 
 		_, err = d.execute(ctx, q(fmt.Sprintf(d.ResourcesDeleteSQL, tableName), d.param, d.numbered), resourceName)
 		if err != nil {
-			fmt.Println(d.ResourcesDeleteSQL, resourceName)
+			fmt.Println("delete resources error")
 			panic(err)
 		}
 	} else {
@@ -730,7 +718,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 			if err.Error() == "provided data does not appear to be a protobuf message, expected prefix [107 56 115 0]" {
 				jsonData = value
 			} else {
-				fmt.Println("正在解码：", tableName)
+				fmt.Println("decoding：", tableName)
 				log.Fatalf("Failed to decode protobuf: %v", err)
 			}
 		} else {
@@ -769,30 +757,20 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 
 		// 如果是创建操作
 		if cVal == 1 {
-			// 定义创建语句
-			insertQuery := `
-    						INSERT INTO %s (name, namespace, apigroup, region, data, created_time, update_time)
-    						VALUES ($1, $2, $3, $4, $5, $6, $7)
-    						`
-			formattedInsertQuery := fmt.Sprintf(insertQuery, pq.QuoteIdentifier(tableName))
 
 			// 执行插入
-			_, err = d.execute(ctx, formattedInsertQuery, resourceName, namespace, apigroup, region, jsonData, creationTime, creationTime)
+			_, err = d.execute(ctx, q(fmt.Sprintf(d.ResourcesInsertSQL, tableName), d.param, d.numbered), resourceName, namespace, apigroup, region, jsonData, creationTime, creationTime)
 			if err != nil {
+				fmt.Println("insert resources error")
 				panic(err)
 			}
 
 		} else {
-			// 定义更新语句
-			updateQuery := `
-							UPDATE %s SET namespace = $1, region = $2,data = $3, update_time = $4 WHERE name = $5
-							`
-
-			formattedUpdateQuery := fmt.Sprintf(updateQuery, pq.QuoteIdentifier(tableName))
 
 			// 执行更新
-			_, err = d.execute(ctx, formattedUpdateQuery, namespace, region, jsonData, formattedTime, resourceName)
+			_, err = d.execute(ctx, q(fmt.Sprintf(d.ResourcesUpdateSQL, tableName), d.param, d.numbered), namespace, region, jsonData, formattedTime, resourceName)
 			if err != nil {
+				fmt.Println("update resources error")
 				panic(err)
 			}
 		}
