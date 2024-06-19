@@ -711,6 +711,7 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 
 		_, err = d.execute(ctx, d.ResourcesDeleteSQL, resourceName)
 		if err != nil {
+			fmt.Println(d.ResourcesDeleteSQL, resourceName)
 			panic(err)
 		}
 	} else {
