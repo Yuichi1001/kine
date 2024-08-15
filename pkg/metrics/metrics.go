@@ -3,7 +3,7 @@ package metrics
 import (
 	"time"
 
-	"github.com/k3s-io/kine/pkg/util"
+	"gitee.com/iscas-system/kine/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )

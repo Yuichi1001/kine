@@ -11,7 +11,7 @@ RUN if [ "${ARCH}" == "amd64" ]; then \
     curl -sL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s;  \
     fi
 
-ENV SRC_DIR=/go/src/github.com/k3s-io/kine
+ENV SRC_DIR=/go/src/gitee.com/iscas-system/kine
 WORKDIR ${SRC_DIR}/
 
 # Validate needs everything in the project, so we separate it out for better caching
@@ -46,5 +46,5 @@ COPY ./package ./package
 CMD ./scripts/entry package
 
 FROM scratch as binary
-ENV SRC_DIR=/go/src/github.com/k3s-io/kine
+ENV SRC_DIR=/go/src/gitee.com/iscas-system/kine
 COPY --from=build ${SRC_DIR}/bin /bin

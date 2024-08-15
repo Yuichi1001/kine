@@ -7,8 +7,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/k3s-io/kine/pkg/drivers/generic"
-	"github.com/k3s-io/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/drivers/generic"
+	"gitee.com/iscas-system/kine/pkg/server"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

@@ -13,4 +13,3 @@ provision-database $DB_ARGS
 start-test $@
 
 ./scripts/test-load
-./scripts/test-conformance

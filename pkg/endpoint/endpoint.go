@@ -8,15 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/k3s-io/kine/pkg/drivers/dqlite"
-	"github.com/k3s-io/kine/pkg/drivers/generic"
-	"github.com/k3s-io/kine/pkg/drivers/mysql"
-	"github.com/k3s-io/kine/pkg/drivers/nats"
-	"github.com/k3s-io/kine/pkg/drivers/pgsql"
-	"github.com/k3s-io/kine/pkg/drivers/sqlite"
-	"github.com/k3s-io/kine/pkg/metrics"
-	"github.com/k3s-io/kine/pkg/server"
-	"github.com/k3s-io/kine/pkg/tls"
+	"gitee.com/iscas-system/kine/pkg/drivers/dqlite"
+	"gitee.com/iscas-system/kine/pkg/drivers/generic"
+	"gitee.com/iscas-system/kine/pkg/drivers/nats"
+	"gitee.com/iscas-system/kine/pkg/drivers/sqlite"
+	"gitee.com/iscas-system/kine/pkg/metrics"
+	"gitee.com/iscas-system/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/tls"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -33,8 +31,6 @@ const (
 	ETCDBackend      = "etcd3"
 	JetStreamBackend = "jetstream"
 	NATSBackend      = "nats"
-	MySQLBackend     = "mysql"
-	PostgresBackend  = "postgres"
 )
 
 type Config struct {
@@ -107,9 +103,7 @@ func Listen(ctx context.Context, config Config) (ETCDConfig, error) {
 	return ETCDConfig{
 		LeaderElect: leaderelect,
 		Endpoints:   []string{endpoint},
-		TLSConfig: tls.Config{
-			CAFile: config.ServerTLSConfig.CAFile,
-		},
+		TLSConfig:   tls.Config{},
 	}, nil
 }
 
@@ -216,10 +210,6 @@ func getKineStorageBackend(ctx context.Context, driver, dsn string, cfg Config) 
 		backend, err = sqlite.New(ctx, dsn, cfg.ConnectionPoolConfig, cfg.MetricsRegisterer)
 	case DQLiteBackend:
 		backend, err = dqlite.New(ctx, dsn, cfg.ConnectionPoolConfig, cfg.MetricsRegisterer)
-	case PostgresBackend:
-		backend, err = pgsql.New(ctx, dsn, cfg.BackendTLSConfig, cfg.ConnectionPoolConfig, cfg.MetricsRegisterer)
-	case MySQLBackend:
-		backend, err = mysql.New(ctx, dsn, cfg.BackendTLSConfig, cfg.ConnectionPoolConfig, cfg.MetricsRegisterer)
 	case JetStreamBackend:
 		backend, err = nats.NewLegacy(ctx, dsn, cfg.BackendTLSConfig)
 	case NATSBackend:

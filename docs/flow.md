@@ -110,28 +110,28 @@ flowchart LR
   sqllog-watch == "chan []event 100<br>revision filter" ===> logstructured-watch
   logstructured-watch == "chan []event 100<br>batching" ===> grpc-watch-response
 
-  click grpc-create href "https://github.com/k3s-io/kine/blob/master/pkg/server/create.go" _blank
-  click grpc-update href "https://github.com/k3s-io/kine/blob/master/pkg/server/update.go" _blank
-  click grpc-delete href "https://github.com/k3s-io/kine/blob/master/pkg/server/delete.go" _blank
-  click grpc-get href "https://github.com/k3s-io/kine/blob/master/pkg/server/get.go" _blank
-  click grpc-list href "https://github.com/k3s-io/kine/blob/master/pkg/server/list.go" _blank
-  click grpc-watch-create href "https://github.com/k3s-io/kine/blob/master/pkg/server/watch.go#L70" _blank
-  click grpc-watch-response href "https://github.com/k3s-io/kine/blob/master/pkg/server/watch.go#L119" _blank
+  click grpc-create href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/create.go" _blank
+  click grpc-update href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/update.go" _blank
+  click grpc-delete href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/delete.go" _blank
+  click grpc-get href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/get.go" _blank
+  click grpc-list href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/list.go" _blank
+  click grpc-watch-create href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/watch.go#L70" _blank
+  click grpc-watch-response href "https://gitee.com/iscas-system/kine/blob/master/pkg/server/watch.go#L119" _blank
 
-  click logstructured-create href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L97" _blank
-  click logstructured-update href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L222" _blank
-  click logstructured-delete href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L129" _blank
-  click logstructured-get href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L60" _blank
-  click logstructured-list href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L171" _blank
-  click logstructured-watch href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/logstructured.go#L432" _blank
+  click logstructured-create href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L97" _blank
+  click logstructured-update href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L222" _blank
+  click logstructured-delete href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L129" _blank
+  click logstructured-get href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L60" _blank
+  click logstructured-list href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L171" _blank
+  click logstructured-watch href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/logstructured.go#L432" _blank
 
-  click sqllog-list href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/sqllog/sql.go#L274" _blank
-  click sqllog-append href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/sqllog/sql.go#L529" _blank
-  click sqllog-poll-select href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/sqllog/sql.go#L353" _blank
-  click sqllog-poll-events href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/sqllog/sql.go#L402" _blank
-  click sqllog-watch href "https://github.com/k3s-io/kine/blob/master/pkg/logstructured/sqllog/sql.go#L353" _blank
+  click sqllog-list href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/sqllog/sql.go#L274" _blank
+  click sqllog-append href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/sqllog/sql.go#L529" _blank
+  click sqllog-poll-select href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/sqllog/sql.go#L353" _blank
+  click sqllog-poll-events href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/sqllog/sql.go#L402" _blank
+  click sqllog-watch href "https://gitee.com/iscas-system/kine/blob/master/pkg/logstructured/sqllog/sql.go#L353" _blank
 
-  click broadcaster-subscribe href "https://github.com/k3s-io/kine/blob/master/pkg/broadcaster/broadcaster.go#L16" _blank
+  click broadcaster-subscribe href "https://gitee.com/iscas-system/kine/blob/master/pkg/broadcaster/broadcaster.go#L16" _blank
 ```
 
 ### Flow Details

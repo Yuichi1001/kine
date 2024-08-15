@@ -5,7 +5,7 @@ ARG ARCH=amd64
 RUN apk -U add bash ca-certificates coreutils curl docker-cli file findutils gcc git less musl-dev vim wget
 RUN apk -U add py3-pip && pip install kubernetes termplotlib==v0.3.4
 
-ENV KINE_SOURCE /go/src/github.com/k3s-io/kine/
+ENV KINE_SOURCE /go/src/gitee.com/iscas-system/kine/
 ENV HOME ${KINE_SOURCE}
 WORKDIR ${KINE_SOURCE}
 

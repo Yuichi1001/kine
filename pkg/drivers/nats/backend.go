@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/k3s-io/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/server"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
@@ -135,8 +135,8 @@ func (b *Backend) CurrentRevision(ctx context.Context) (int64, error) {
 }
 
 // Count returns an exact count of the number of matching keys and the current revision of the database.
-func (b *Backend) Count(ctx context.Context, prefix, startKey string, revision int64) (int64, int64, error) {
-	count, err := b.kv.Count(ctx, prefix, startKey, revision)
+func (b *Backend) Count(ctx context.Context, prefix string, revision int64) (int64, int64, error) {
+	count, err := b.kv.Count(ctx, prefix, revision)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -426,9 +426,4 @@ func (b *Backend) Watch(ctx context.Context, prefix string, startRevision int64)
 		Events:          events,
 		CurrentRevision: rev,
 	}
-}
-
-// Compact is a no-op / not implemented. Revision history is managed by the jetstream bucket.
-func (b *Backend) Compact(ctx context.Context, revision int64) (int64, error) {
-	return revision, nil
 }

@@ -10,11 +10,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/k3s-io/kine/pkg/drivers/generic"
-	"github.com/k3s-io/kine/pkg/logstructured"
-	"github.com/k3s-io/kine/pkg/logstructured/sqllog"
-	"github.com/k3s-io/kine/pkg/server"
-	"github.com/k3s-io/kine/pkg/util"
+	"gitee.com/iscas-system/kine/pkg/drivers/generic"
+	"gitee.com/iscas-system/kine/pkg/logstructured"
+	"gitee.com/iscas-system/kine/pkg/logstructured/sqllog"
+	"gitee.com/iscas-system/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/util"
 	"github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -124,12 +124,72 @@ func NewVariant(ctx context.Context, driverName, dataSourceName string, connPool
 	return logstructured.New(sqllog.New(dialect)), dialect, nil
 }
 
+func createResourceTable(db *sql.DB, tableName string) error {
+
+	createTableQuery := fmt.Sprintf(`
+    CREATE TABLE IF NOT EXISTS %s (
+        name TEXT,
+        namespace TEXT,
+        apigroup TEXT,
+        region TEXT,
+        data TEXT,
+        created_time TEXT,
+        update_time TEXT,
+        PRIMARY KEY (name)
+    );`, tableName)
+
+	if _, err := db.Exec(createTableQuery); err != nil {
+		return err
+	}
+
+	// 创建索引
+	createIndexQueries := []string{
+		fmt.Sprintf(`CREATE INDEX %s_name_index ON %s (name);`, tableName, tableName),
+		fmt.Sprintf(`CREATE INDEX %s_name_created_time_index ON %s (name, created_time);`, tableName, tableName),
+		fmt.Sprintf(`CREATE INDEX %s_name_update_time_index ON %s (name, update_time);`, tableName, tableName),
+		fmt.Sprintf(`CREATE INDEX %s_namespace_created_time_index ON %s (namespace, created_time);`, tableName, tableName),
+		fmt.Sprintf(`CREATE INDEX %s_namespace_update_time_index ON %s (namespace, update_time);`, tableName, tableName),
+	}
+
+	for _, query := range createIndexQueries {
+		_, err := db.Exec(query)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func setup(db *sql.DB) error {
 	logrus.Infof("Configuring database table schema and indexes, this may take a moment...")
 
 	for _, stmt := range schema {
 		logrus.Tracef("SETUP EXEC : %v", util.Stripped(stmt))
 		_, err := db.Exec(stmt)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 创建特定资源的表和索引
+	// 注册所有的api-resources,为他们创建表格
+	resources := []string{
+		"configmaps", "endpoints", "events", "limitranges", "namespaces",
+		"nodes", "persistentvolumeclaims", "persistentvolumes", "pods", "podtemplates",
+		"replicationcontrollers", "resourcequotas", "secrets", "serviceaccounts", "services",
+		"mutatingwebhookconfigurations", "validatingadmissionpolicies", "validatingadmissionpolicybindings", "validatingwebhookconfigurations", "customresourcedefinitions",
+		"apiservices", "controllerrevisions", "daemonsets", "deployments", "replicasets",
+		"statefulsets", "horizontalpodautoscalers", "cronjobs", "jobs", "certificatesigningrequests",
+		"leases", "endpointslices", "flowschemas", "prioritylevelconfigurations", "helmchartconfigs",
+		"helmcharts", "addons", "etcdsnapshotfiles", "ingressclasses", "ingress",
+		"networkpolicies", "runtimeclasses", "poddisruptionbudgets", "clusterrolebindings", "clusterroles",
+		"rolebindings", "roles", "priorityclasses", "csidrivers", "csinodes",
+		"csistoragecapacities", "storageclasses", "volumeattachments", "ingressroutes", "ingressroutetcps",
+		"ingressrouteudps", "middlewares", "middlewaretcps", "serverstransports", "tlsoptions",
+		"tlsstores", "traefikservices", "serverstransporttcps",
+	}
+	for _, resource := range resources {
+		err := createResourceTable(db, resource)
 		if err != nil {
 			return err
 		}

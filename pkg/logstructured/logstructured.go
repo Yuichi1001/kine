@@ -2,14 +2,13 @@ package logstructured
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/k3s-io/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/server"
 )
 
 const (
@@ -21,12 +20,11 @@ type Log interface {
 	CompactRevision(ctx context.Context) (int64, error)
 	CurrentRevision(ctx context.Context) (int64, error)
 	List(ctx context.Context, prefix, startKey string, limit, revision int64, includeDeletes bool) (int64, []*server.Event, error)
-	Count(ctx context.Context, prefix, startKey string, revision int64) (int64, int64, error)
 	After(ctx context.Context, prefix string, revision, limit int64) (int64, []*server.Event, error)
 	Watch(ctx context.Context, prefix string) <-chan []*server.Event
+	Count(ctx context.Context, prefix string, revision int64) (int64, int64, error)
 	Append(ctx context.Context, event *server.Event) (int64, error)
 	DbSize(ctx context.Context) (int64, error)
-	Compact(ctx context.Context, revision int64) (int64, error)
 }
 
 type ttlEventKV struct {
@@ -177,7 +175,7 @@ func (l *LogStructured) List(ctx context.Context, prefix, startKey string, limit
 
 	rev, events, err := l.log.List(ctx, prefix, startKey, limit, revision, false)
 	if err != nil {
-		return rev, nil, err
+		return 0, nil, err
 	}
 	if revision == 0 && len(events) == 0 {
 		// if no revision is requested and no events are returned, then
@@ -186,7 +184,7 @@ func (l *LogStructured) List(ctx context.Context, prefix, startKey string, limit
 		// been created.
 		currentRev, err := l.log.CurrentRevision(ctx)
 		if err != nil {
-			return currentRev, nil, err
+			return 0, nil, err
 		}
 		return l.List(ctx, prefix, startKey, limit, currentRev)
 	} else if revision != 0 {
@@ -200,11 +198,11 @@ func (l *LogStructured) List(ctx context.Context, prefix, startKey string, limit
 	return rev, kvs, nil
 }
 
-func (l *LogStructured) Count(ctx context.Context, prefix, startKey string, revision int64) (revRet int64, count int64, err error) {
+func (l *LogStructured) Count(ctx context.Context, prefix string, revision int64) (revRet int64, count int64, err error) {
 	defer func() {
 		logrus.Tracef("COUNT %s, rev=%d => rev=%d, count=%d, err=%v", prefix, revision, revRet, count, err)
 	}()
-	rev, count, err := l.log.Count(ctx, prefix, startKey, revision)
+	rev, count, err := l.log.Count(ctx, prefix, revision)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -448,9 +446,7 @@ func (l *LogStructured) Watch(ctx context.Context, prefix string, revision int64
 
 	rev, kvs, err := l.log.After(ctx, prefix, revision, 0)
 	if err != nil {
-		if !errors.Is(err, context.Canceled) {
-			logrus.Errorf("Failed to list %s for revision %d: %v", prefix, revision, err)
-		}
+		logrus.Errorf("Failed to list %s for revision %d: %v", prefix, revision, err)
 		if err == server.ErrCompacted {
 			compact, _ := l.log.CompactRevision(ctx)
 			wr.CompactRevision = compact
@@ -496,8 +492,4 @@ func (l *LogStructured) DbSize(ctx context.Context) (int64, error) {
 
 func (l *LogStructured) CurrentRevision(ctx context.Context) (int64, error) {
 	return l.log.CurrentRevision(ctx)
-}
-
-func (l *LogStructured) Compact(ctx context.Context, revision int64) (int64, error) {
-	return l.log.Compact(ctx, revision)
 }

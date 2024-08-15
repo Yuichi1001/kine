@@ -5,7 +5,7 @@ start-test() {
     local port=$(cat $TEST_DIR/databases/*/metadata/port)
     local pass=$(cat $TEST_DIR/databases/*/metadata/password)
     local test_image=docker.io/library/postgres:13.2
-    # https://github.com/k3s-io/kine/issues/44
+    # https://gitee.com/iscas-system/kine/issues/44
     case "$DB_IMAGE" in
       *v20.2 ) local extra_params="&serial_normalization=sql_sequence" ;;
       *      ) local extra_params="&experimental_serial_normalization=sql_sequence";;

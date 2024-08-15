@@ -31,5 +31,5 @@ no-dapper:
 	DOCKER_BUILDKIT=1 docker build \
 		$(DEFAULT_BUILD_ARGS) --build-arg="DRONE_TAG=$(DRONE_TAG)" --build-arg="CROSS=$(CROSS)" \
 		-f Dockerfile --target=binary --output=. .
-	DOCKER_BUILDKIT=1 docker run -v /var/run/docker.sock:/var/run/docker.sock -v ./dist:/go/src/github.com/k3s-io/kine/dist \
+	DOCKER_BUILDKIT=1 docker run -v /var/run/docker.sock:/var/run/docker.sock -v ./dist:/go/src/gitee.com/iscas-system/kine/dist \
 		-e DAPPER_UID=1000 -e DAPPER_GID=1000 -e IMAGE_NAME -e DRONE_TAG -e DIRTY=$(DIRTY) kine-build

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/k3s-io/kine/pkg/broadcaster"
-	"github.com/k3s-io/kine/pkg/metrics"
-	"github.com/k3s-io/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/broadcaster"
+	"gitee.com/iscas-system/kine/pkg/metrics"
+	"gitee.com/iscas-system/kine/pkg/server"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -294,7 +294,7 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 	}
 
 	if revision == 0 {
-		rows, err = s.d.ListCurrent(ctx, prefix, startKey, limit, includeDeleted)
+		rows, err = s.d.ListCurrent(ctx, prefix, limit, includeDeleted)
 	} else {
 		rows, err = s.d.List(ctx, prefix, startKey, limit, revision, includeDeleted)
 	}
@@ -432,9 +432,7 @@ func (s *SQLLog) poll(result chan interface{}, pollStart int64) {
 
 		rows, err := s.d.After(s.ctx, "%", s.currentRev, pollBatchSize)
 		if err != nil {
-			if !errors.Is(err, context.Canceled) {
-				logrus.Errorf("fail to list latest changes: %v", err)
-			}
+			logrus.Errorf("fail to list latest changes: %v", err)
 			continue
 		}
 
@@ -526,15 +524,15 @@ func canSkipRevision(rev, skip int64, skipTime time.Time) bool {
 	return rev == skip && time.Since(skipTime) > time.Second
 }
 
-func (s *SQLLog) Count(ctx context.Context, prefix, startKey string, revision int64) (int64, int64, error) {
+func (s *SQLLog) Count(ctx context.Context, prefix string, revision int64) (int64, int64, error) {
 	if strings.HasSuffix(prefix, "/") {
 		prefix += "%"
 	}
 
 	if revision == 0 {
-		return s.d.CountCurrent(ctx, prefix, startKey)
+		return s.d.CountCurrent(ctx, prefix)
 	}
-	return s.d.Count(ctx, prefix, startKey, revision)
+	return s.d.Count(ctx, prefix, revision)
 }
 
 func (s *SQLLog) Append(ctx context.Context, event *server.Event) (int64, error) {
@@ -611,8 +609,4 @@ func safeCompactRev(targetCompactRev int64, currentRev int64) int64 {
 
 func (s *SQLLog) DbSize(ctx context.Context) (int64, error) {
 	return s.d.GetSize(ctx)
-}
-
-func (s *SQLLog) Compact(ctx context.Context, revision int64) (int64, error) {
-	return s.d.Compact(ctx, revision)
 }

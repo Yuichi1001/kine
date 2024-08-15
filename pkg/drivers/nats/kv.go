@@ -376,16 +376,12 @@ type keySeq struct {
 	seq uint64
 }
 
-func (e *KeyValue) Count(ctx context.Context, prefix, startKey string, revision int64) (int64, error) {
-	seekKey := prefix
-	if startKey != "" {
-		seekKey = strings.TrimSuffix(seekKey, "/")
-		seekKey = fmt.Sprintf("%s/%s", seekKey, startKey)
-	}
-
+func (e *KeyValue) Count(ctx context.Context, prefix string, revision int64) (int64, error) {
 	it := e.bt.Iter()
-	if seekKey != "" {
-		if ok := it.Seek(seekKey); !ok {
+
+	if prefix != "" {
+		ok := it.Seek(prefix)
+		if !ok {
 			return 0, nil
 		}
 	}
@@ -442,7 +438,8 @@ func (e *KeyValue) List(ctx context.Context, prefix, startKey string, limit, rev
 
 	it := e.bt.Iter()
 	if seekKey != "" {
-		if ok := it.Seek(seekKey); !ok {
+		ok := it.Seek(seekKey)
+		if !ok {
 			return nil, nil
 		}
 	}

@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"time"
 
-	natsserver "github.com/k3s-io/kine/pkg/drivers/nats/server"
-	"github.com/k3s-io/kine/pkg/server"
-	"github.com/k3s-io/kine/pkg/tls"
+	natsserver "gitee.com/iscas-system/kine/pkg/drivers/nats/server"
+	"gitee.com/iscas-system/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/tls"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/sirupsen/logrus"
@@ -149,13 +149,9 @@ func newBackend(ctx context.Context, connection string, tlsInfo tls.Config, lega
 		cancel()
 		return nil, fmt.Errorf("failed to get or create bucket: %w", err)
 	}
-
-	// Previous versions of KINE disabled direct gets on the bucket, however
-	// that caused issues with `get` operations possibly timing out. This
-	// check ensures that direct gets are enabled or enables them implicitly.
-	if err := ensureDirectGets(ctx, js, config); err != nil {
+	if err := disableDirectGets(ctx, js, config); err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to enable direct gets: %w", err)
+		return nil, fmt.Errorf("failed to disable direct gets: %w", err)
 	}
 
 	logrus.Infof("bucket initialized: %s", config.bucket)
@@ -230,11 +226,13 @@ func getOrCreateBucket(ctx context.Context, js jetstream.JetStream, config *Conf
 		}
 
 		// Some unexpected error.
-		return nil, fmt.Errorf("failed to initialize KV bucket: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize KV bucket: %w", err)
+		}
 	}
 }
 
-func ensureDirectGets(ctx context.Context, js jetstream.JetStream, config *Config) error {
+func disableDirectGets(ctx context.Context, js jetstream.JetStream, config *Config) error {
 	for {
 		str, err := js.Stream(ctx, fmt.Sprintf("KV_%s", config.bucket))
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -245,13 +243,7 @@ func ensureDirectGets(ctx context.Context, js jetstream.JetStream, config *Confi
 		}
 
 		scfg := str.CachedInfo().Config
-
-		// All good.
-		if scfg.AllowDirect {
-			return nil
-		}
-
-		scfg.AllowDirect = true
+		scfg.AllowDirect = false
 
 		_, err = js.UpdateStream(ctx, scfg)
 		if errors.Is(err, context.DeadlineExceeded) {

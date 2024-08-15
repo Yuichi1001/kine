@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	kserver "github.com/k3s-io/kine/pkg/server"
+	kserver "gitee.com/iscas-system/kine/pkg/server"
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
@@ -129,14 +129,14 @@ func TestBackend_Create(t *testing.T) {
 
 	time.Sleep(2 * time.Millisecond)
 
-	srev, count, err := b.Count(ctx, "/", "", 0)
+	srev, count, err := b.Count(ctx, "/", 0)
 	noErr(t, err)
 	expEqual(t, 4, srev)
 	expEqual(t, 4, count)
 
 	time.Sleep(time.Second)
 
-	srev, count, err = b.Count(ctx, "/", "", 0)
+	srev, count, err = b.Count(ctx, "/", 0)
 	noErr(t, err)
 	expEqual(t, 4, srev)
 	expEqual(t, 3, count)
@@ -149,7 +149,7 @@ func TestBackend_Create(t *testing.T) {
 
 	time.Sleep(2 * time.Millisecond)
 
-	srev, count, err = b.Count(ctx, "/", "", 0)
+	srev, count, err = b.Count(ctx, "/", 0)
 	noErr(t, err)
 	expEqual(t, 6, srev)
 	expEqual(t, 4, count)

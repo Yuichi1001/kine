@@ -28,10 +28,9 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"regexp"
 	"strconv"
@@ -39,11 +38,11 @@ import (
 	"sync"
 	"time"
 
+	"gitee.com/iscas-system/kine/pkg/metrics"
+	"gitee.com/iscas-system/kine/pkg/server"
+	"gitee.com/iscas-system/kine/pkg/util"
 	"github.com/Rican7/retry/backoff"
 	"github.com/Rican7/retry/strategy"
-	"github.com/k3s-io/kine/pkg/metrics"
-	"github.com/k3s-io/kine/pkg/server"
-	"github.com/k3s-io/kine/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/sirupsen/logrus"
@@ -57,7 +56,7 @@ const (
 var _ server.Dialect = (*Generic)(nil)
 
 var (
-	columns = "kv.id AS theid, kv.name AS thename, kv.created, kv.deleted, kv.create_revision, kv.prev_revision, kv.lease, kv.value, kv.old_value"
+	columns = "kv.id AS theid, kv.name, kv.created, kv.deleted, kv.create_revision, kv.prev_revision, kv.lease, kv.value, kv.old_value"
 	revSQL  = `
 		SELECT MAX(rkv.id) AS id
 		FROM kine AS rkv`
@@ -66,6 +65,16 @@ var (
 		SELECT MAX(crkv.prev_revision) AS prev_revision
 		FROM kine AS crkv
 		WHERE crkv.name = 'compact_rev_key'`
+
+	idOfKey = `
+		AND
+		mkv.id <= ? AND
+		mkv.id > (
+			SELECT MAX(ikv.id) AS id
+			FROM kine AS ikv
+			WHERE
+				ikv.name = ? AND
+				ikv.id <= ?)`
 
 	listSQL = fmt.Sprintf(`
 		SELECT *
@@ -84,28 +93,10 @@ var (
 				kv.deleted = 0 OR
 				?
 		) AS lkv
-		ORDER BY lkv.thename ASC
+		ORDER BY lkv.theid ASC
 		`, revSQL, compactRevSQL, columns)
 
 	tableName = ""
-
-	resourcesTemplate = []string{
-		"/configmaps/", "/endpoints/", "/events/", "/limitranges/", "/namespaces/",
-		"/minions/", "/persistentvolumeclaims/", "/persistentvolumes/", "/pods/", "/podtemplates/",
-		"/controllers/", "/resourcequotas/", "/secrets/", "/serviceaccounts/", "/services/specs/",
-		"/mutatingwebhookconfigurations/", "/validatingadmissionpolicies/", "/validatingadmissionpolicybindings/", "/validatingwebhookconfigurations/", "/customresourcedefinitions/",
-		"/apiservices/", "/controllerrevisions/", "/daemonsets/", "/deployments/", "/replicasets/",
-		"/statefulsets/", "/horizontalpodautoscalers/", "/cronjobs/", "/jobs/", "/certificatesigningrequests/",
-		"/leases/", "/endpointslices/", "/flowschemas/", "/prioritylevelconfigurations/", "/helmchartconfigs/",
-		"/helmcharts/", "/addons/", "/etcdsnapshotfiles/", "/ingressclasses/", "/ingress/",
-		"/networkpolicies/", "/runtimeclasses/", "/poddisruptionbudgets/", "/clusterrolebindings/", "/clusterroles/",
-		"/rolebindings/", "/roles/", "/priorityclasses/", "/csidrivers/", "/csinodes/",
-		"/csistoragecapacities/", "/storageclasses/", "/volumeattachments/", "/traefik.containo.us/ingressroutes/", "/traefik.containo.us/ingressroutetcps/",
-		"/traefik.containo.us/ingressrouteudps/", "/traefik.containo.us/middlewares/", "/traefik.containo.us/middlewaretcps/", "/traefik.containo.us/serverstransports/", "/traefik.containo.us/tlsoptions/",
-		"/traefik.containo.us/tlsstores/", "/traefik.containo.us/traefikservices/", "/traefik.io/ingressroutes/", "/traefik.io/ingressroutetcps/", "/traefik.io/ingressrouteudps/",
-		"/traefik.io/middlewares/", "/traefik.io/middlewaretcps/", "/traefik.io/serverstransports/", "/serverstransporttcps/", "/traefik.io/tlsoptions/",
-		"/traefik.io/tlsstores/", "/traefik.io/traefikservices/",
-	}
 
 	tableMap = map[string]string{
 		"/configmaps/": "configmaps", "/endpoints/": "endpoints", "/events/": "events", "/limitranges/": "limitranges", "/namespaces/": "namespaces",
@@ -188,10 +179,12 @@ func extractValue(jsonStr, key string) (string, error) {
 
 // 同样是字符串匹配，目的是提取出某条resources数据对应的表名及资源名
 func containsAndReturnRemainder(str1, str2 string) (bool, string) {
+	//检查str1是否包含str2
 	index := strings.Index(str1, str2)
 	if index == -1 {
 		return false, ""
 	}
+	//如果str1包含str2，这返回str1字符串里包含的str2之后的字符串
 	remainder := str1[index+len(str2):]
 	return true, remainder
 }
@@ -212,126 +205,7 @@ func q(sql, param string, numbered bool) string {
 	})
 }
 
-func (d *Generic) Migrate(ctx context.Context) {
-	var (
-		count     = 0
-		countKV   = d.queryRow(ctx, "SELECT COUNT(*) FROM key_value")
-		countKine = d.queryRow(ctx, "SELECT COUNT(*) FROM kine")
-	)
-
-	if err := countKV.Scan(&count); err != nil || count == 0 {
-		return
-	}
-
-	if err := countKine.Scan(&count); err != nil || count != 0 {
-		return
-	}
-
-	logrus.Infof("Migrating content from old table")
-	_, err := d.execute(ctx,
-		`INSERT INTO kine(deleted, create_revision, prev_revision, name, value, created, lease)
-					SELECT 0, 0, 0, kv.name, kv.value, 1, CASE WHEN kv.ttl > 0 THEN 15 ELSE 0 END
-					FROM key_value kv
-						WHERE kv.id IN (SELECT MAX(kvd.id) FROM key_value kvd GROUP BY kvd.name)`)
-	if err != nil {
-		logrus.Errorf("Migration failed: %v", err)
-	}
-
-	//迁移kine中的数据到pod、service等各个表中
-	if err := d.migrateData(ctx); err != nil {
-		logrus.Fatalf("Data migration failed: %v", err)
-	}
-}
-
-func (d *Generic) migrateData(ctx context.Context) error {
-	// 正则表达式用于提取name字段中的信息
-	re := regexp.MustCompile(`^/registry/([^/]+)/(.+)$`)
-
-	// 查询kine表中的所有数据
-	rows, err := d.DB.QueryContext(ctx, `SELECT name, value FROM kine`)
-	if err != nil {
-		return fmt.Errorf("query kine table failed: %v", err)
-	}
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-
-		}
-	}(rows)
-
-	for rows.Next() {
-		var name, value string
-		if err := rows.Scan(&name, &value); err != nil {
-			return fmt.Errorf("scan row failed: %v", err)
-		}
-
-		matches := re.FindStringSubmatch(name)
-		if matches == nil {
-			continue // 跳过不匹配的行
-		}
-
-		// 提取表名、命名空间和数据名称
-		tableName := matches[1]
-
-		// 插入到相应的表中
-		switch tableName {
-		case "pods":
-			_, err := d.DB.ExecContext(ctx, `INSERT INTO pods (data) VALUES (?)`, value)
-			if err != nil {
-				logrus.Errorf("Insert into pods failed: %v", err)
-			}
-		case "deployments":
-			_, err := d.DB.ExecContext(ctx, `INSERT INTO deployments (data) VALUES (?)`, value)
-			if err != nil {
-				logrus.Errorf("Insert into deployments failed: %v", err)
-			}
-		case "services":
-			_, err := d.DB.ExecContext(ctx, `INSERT INTO services (data) VALUES (?)`, value)
-			if err != nil {
-				logrus.Errorf("Insert into services failed: %v", err)
-			}
-		default:
-			logrus.Warnf("Unknown table name: %s", tableName)
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("rows iteration failed: %v", err)
-	}
-
-	return nil
-}
-
-func configureConnectionPooling(connPoolConfig ConnectionPoolConfig, db *sql.DB, driverName string) {
-	// behavior copied from database/sql - zero means defaultMaxIdleConns; negative means 0
-	if connPoolConfig.MaxIdle < 0 {
-		connPoolConfig.MaxIdle = 0
-	} else if connPoolConfig.MaxIdle == 0 {
-		connPoolConfig.MaxIdle = defaultMaxIdleConns
-	}
-
-	logrus.Infof("Configuring %s database connection pooling: maxIdleConns=%d, maxOpenConns=%d, connMaxLifetime=%s", driverName, connPoolConfig.MaxIdle, connPoolConfig.MaxOpen, connPoolConfig.MaxLifetime)
-	db.SetMaxIdleConns(connPoolConfig.MaxIdle)
-	db.SetMaxOpenConns(connPoolConfig.MaxOpen)
-	db.SetConnMaxLifetime(connPoolConfig.MaxLifetime)
-}
-
-func openAndTest(driverName, dataSourceName string) (*sql.DB, error) {
-	db, err := sql.Open(driverName, dataSourceName)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := 0; i < 3; i++ {
-		if err := db.Ping(); err != nil {
-			db.Close()
-			return nil, err
-		}
-	}
-
-	return db, nil
-}
-
+// 注册所有支持的resources
 func addSchemes(scheme *runtime.Scheme) {
 	schemes := []struct {
 		name string
@@ -366,6 +240,36 @@ func addSchemes(scheme *runtime.Scheme) {
 			log.Fatalf("Failed to add %s types to scheme: %v", s.name, err)
 		}
 	}
+}
+
+func configureConnectionPooling(connPoolConfig ConnectionPoolConfig, db *sql.DB, driverName string) {
+	// behavior copied from database/sql - zero means defaultMaxIdleConns; negative means 0
+	if connPoolConfig.MaxIdle < 0 {
+		connPoolConfig.MaxIdle = 0
+	} else if connPoolConfig.MaxIdle == 0 {
+		connPoolConfig.MaxIdle = defaultMaxIdleConns
+	}
+
+	logrus.Infof("Configuring %s database connection pooling: maxIdleConns=%d, maxOpenConns=%d, connMaxLifetime=%s", driverName, connPoolConfig.MaxIdle, connPoolConfig.MaxOpen, connPoolConfig.MaxLifetime)
+	db.SetMaxIdleConns(connPoolConfig.MaxIdle)
+	db.SetMaxOpenConns(connPoolConfig.MaxOpen)
+	db.SetConnMaxLifetime(connPoolConfig.MaxLifetime)
+}
+
+func openAndTest(driverName, dataSourceName string) (*sql.DB, error) {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < 3; i++ {
+		if err := db.Ping(); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+
+	return db, nil
 }
 
 func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig ConnectionPoolConfig, paramCharacter string, numbered bool, metricsRegisterer prometheus.Registerer) (*Generic, error) {
@@ -412,7 +316,11 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 	protobufSerializer := serializerInfo.Serializer
 
 	return &Generic{
-		DB:                 db,
+		DB: db,
+		//sql语句中参数的符号
+		param:    paramCharacter,
+		numbered: numbered,
+		//protobuf序列化器
 		protobufSerializer: protobufSerializer,
 		GetRevisionSQL: q(fmt.Sprintf(`
 			SELECT
@@ -420,21 +328,21 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 			FROM kine AS kv
 			WHERE kv.id = ?`, columns), paramCharacter, numbered),
 
-		GetCurrentSQL:        q(fmt.Sprintf(listSQL, "AND mkv.name > ?"), paramCharacter, numbered),
+		GetCurrentSQL:        q(fmt.Sprintf(listSQL, ""), paramCharacter, numbered),
 		ListRevisionStartSQL: q(fmt.Sprintf(listSQL, "AND mkv.id <= ?"), paramCharacter, numbered),
-		GetRevisionAfterSQL:  q(fmt.Sprintf(listSQL, "AND mkv.name > ? AND mkv.id <= ?"), paramCharacter, numbered),
+		GetRevisionAfterSQL:  q(fmt.Sprintf(listSQL, idOfKey), paramCharacter, numbered),
 
 		CountCurrentSQL: q(fmt.Sprintf(`
 			SELECT (%s), COUNT(c.theid)
 			FROM (
 				%s
-			) c`, revSQL, fmt.Sprintf(listSQL, "AND mkv.name > ?")), paramCharacter, numbered),
+			) c`, revSQL, fmt.Sprintf(listSQL, "")), paramCharacter, numbered),
 
 		CountRevisionSQL: q(fmt.Sprintf(`
 			SELECT (%s), COUNT(c.theid)
 			FROM (
 				%s
-			) c`, revSQL, fmt.Sprintf(listSQL, "AND mkv.name > ? AND mkv.id <= ?")), paramCharacter, numbered),
+			) c`, revSQL, fmt.Sprintf(listSQL, "AND mkv.id <= ?")), paramCharacter, numbered),
 
 		AfterSQL: q(fmt.Sprintf(`
 			SELECT (%s), (%s), %s
@@ -468,10 +376,132 @@ func Open(ctx context.Context, driverName, dataSourceName string, connPoolConfig
 			values(?, ?, ?, ?, ?, ?, ?)`,
 
 		ResourcesUpdateSQL: `UPDATE %s SET namespace = ?, region = ?,data = ?, update_time = ? WHERE name = ?`,
-
-		param:    paramCharacter,
-		numbered: numbered,
 	}, err
+}
+
+func (d *Generic) Migrate(ctx context.Context) {
+	var (
+		count     = 0
+		countKV   = d.queryRow(ctx, "SELECT COUNT(*) FROM key_value")
+		countKine = d.queryRow(ctx, "SELECT COUNT(*) FROM kine")
+	)
+
+	if err := countKV.Scan(&count); err != nil || count == 0 {
+		return
+	}
+
+	if err := countKine.Scan(&count); err != nil || count != 0 {
+		return
+	}
+
+	logrus.Infof("Migrating content from old table")
+	_, err := d.execute(ctx,
+		`INSERT INTO kine(deleted, create_revision, prev_revision, name, value, created, lease)
+					SELECT 0, 0, 0, kv.name, kv.value, 1, CASE WHEN kv.ttl > 0 THEN 15 ELSE 0 END
+					FROM key_value kv
+						WHERE kv.id IN (SELECT MAX(kvd.id) FROM key_value kvd GROUP BY kvd.name)`)
+	if err != nil {
+		logrus.Errorf("Migration failed: %v", err)
+	}
+	//迁移kine中的数据到pod、service等各个表中
+	if err := d.migrateData(ctx); err != nil {
+		logrus.Fatalf("Data migration failed: %v", err)
+	}
+}
+
+func (d *Generic) migrateData(ctx context.Context) error {
+	var jsonData []byte
+	resourceName := ""
+	namespace := ""
+	apigroup := ""
+	region := ""
+	creationTime := ""
+
+	// 查询kine表中的所有数据
+	rows, err := d.DB.QueryContext(ctx, `SELECT name, value FROM kine`)
+	if err != nil {
+		return fmt.Errorf("query kine table failed when migrating...: %v", err)
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			fmt.Println("failed to close rows: %v", err)
+		}
+	}(rows)
+
+	for rows.Next() {
+		var name string
+		var value []byte
+		if err := rows.Scan(&name, &value); err != nil {
+			return fmt.Errorf("scan row failed: %v", err)
+		}
+		for resource, tablename := range tableMap {
+			if found, remainder := containsAndReturnRemainder(name, resource); found {
+				tableName = tablename
+				resourceName = remainder
+				break
+			}
+		}
+		//如果没匹配到对应的resources，则直接返回，不需要进行后续操作
+		if resourceName == "" {
+			continue
+		}
+
+		encodedData := value
+
+		// 解码 Protobuf 数据
+		gvk := &schema.GroupVersionKind{} // 替换为实际的 GVK
+		obj, _, err := d.protobufSerializer.Decode(encodedData, gvk, nil)
+		if err != nil {
+			//如果报错如下，则证明数据不需要从protobuf进行解码
+			if err.Error() == "provided data does not appear to be a protobuf message, expected prefix [107 56 115 0]" {
+				jsonData = value
+			} else {
+				fmt.Println("decoding：", tableName)
+				log.Fatalf("Failed to decode protobuf: %v", err)
+			}
+		} else {
+			// 将解码后的对象转换为 JSON 格式
+			jsonData, err = json.MarshalIndent(obj, "", "  ")
+			if err != nil {
+				log.Fatalf("Failed to marshal JSON: %v", err)
+			}
+		}
+
+		apigroup, err = extractValue(string(jsonData), "apiVersion")
+		if err != nil {
+			namespace = "cant-find-apigroup"
+		}
+
+		namespace, err = extractValue(string(jsonData), "namespace")
+		if err != nil {
+			namespace = "cant-find-namespace"
+		}
+
+		region, err = extractValue(string(jsonData), "nodeName")
+		if err != nil {
+			region = "cant-find-region"
+		}
+
+		creationTime, err = extractValue(string(jsonData), "creationTimestamp")
+		if err != nil {
+			creationTime = "cant-find-creationTime"
+		}
+
+		// 执行插入
+		_, err = d.execute(ctx, q(fmt.Sprintf(d.ResourcesInsertSQL, tableName), d.param, d.numbered), resourceName, namespace, apigroup, region, jsonData, creationTime, creationTime)
+		if err != nil {
+			fmt.Println("insert resources error")
+			panic(err)
+		}
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("rows iteration failed: %v", err)
+	}
+
+	return nil
 }
 
 func (d *Generic) query(ctx context.Context, sql string, args ...interface{}) (result *sql.Rows, err error) {
@@ -557,12 +587,12 @@ func (d *Generic) DeleteRevision(ctx context.Context, revision int64) error {
 	return err
 }
 
-func (d *Generic) ListCurrent(ctx context.Context, prefix, startKey string, limit int64, includeDeleted bool) (*sql.Rows, error) {
+func (d *Generic) ListCurrent(ctx context.Context, prefix string, limit int64, includeDeleted bool) (*sql.Rows, error) {
 	sql := d.GetCurrentSQL
 	if limit > 0 {
 		sql = fmt.Sprintf("%s LIMIT %d", sql, limit)
 	}
-	return d.query(ctx, sql, prefix, startKey, includeDeleted)
+	return d.query(ctx, sql, prefix, includeDeleted)
 }
 
 func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revision int64, includeDeleted bool) (*sql.Rows, error) {
@@ -578,27 +608,27 @@ func (d *Generic) List(ctx context.Context, prefix, startKey string, limit, revi
 	if limit > 0 {
 		sql = fmt.Sprintf("%s LIMIT %d", sql, limit)
 	}
-	return d.query(ctx, sql, prefix, startKey, revision, includeDeleted)
+	return d.query(ctx, sql, prefix, revision, startKey, revision, includeDeleted)
 }
 
-func (d *Generic) CountCurrent(ctx context.Context, prefix, startKey string) (int64, int64, error) {
+func (d *Generic) CountCurrent(ctx context.Context, prefix string) (int64, int64, error) {
 	var (
 		rev sql.NullInt64
 		id  int64
 	)
 
-	row := d.queryRow(ctx, d.CountCurrentSQL, prefix, startKey, false)
+	row := d.queryRow(ctx, d.CountCurrentSQL, prefix, false)
 	err := row.Scan(&rev, &id)
 	return rev.Int64, id, err
 }
 
-func (d *Generic) Count(ctx context.Context, prefix, startKey string, revision int64) (int64, int64, error) {
+func (d *Generic) Count(ctx context.Context, prefix string, revision int64) (int64, int64, error) {
 	var (
 		rev sql.NullInt64
 		id  int64
 	)
 
-	row := d.queryRow(ctx, d.CountRevisionSQL, prefix, startKey, revision, false)
+	row := d.queryRow(ctx, d.CountRevisionSQL, prefix, revision, false)
 	err := row.Scan(&rev, &id)
 	return rev.Int64, id, err
 }
@@ -653,7 +683,6 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 		if err != nil {
 			return 0, err
 		}
-
 		id, err = row.LastInsertId()
 		if err != nil {
 			return 0, err
@@ -686,9 +715,9 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 	region := ""
 	creationTime := ""
 
-	for _, resource := range resourcesTemplate {
+	for resource, tablename := range tableMap {
 		if found, remainder := containsAndReturnRemainder(key, resource); found {
-			tableName = tableMap[resource]
+			tableName = tablename
 			resourceName = remainder
 			break
 		}

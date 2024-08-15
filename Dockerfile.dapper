@@ -3,18 +3,18 @@ FROM golang:1.21-alpine3.17 AS dapper
 ARG ARCH=amd64
 
 RUN apk -U add bash coreutils git gcc musl-dev docker-cli vim less file curl wget ca-certificates
-# go imports version gopls/v0.15.3
+# go imports version gopls/v0.14.2
 # https://github.com/golang/tools/releases/latest
-RUN go install golang.org/x/tools/cmd/goimports@cd70d50baa6daa949efa12e295e10829f3a7bd46
+RUN go install golang.org/x/tools/cmd/goimports@1bf163756eb2d2b83518dfd62a35644c98a9ce9d
 RUN rm -rf /go/src /go/pkg
 
 RUN if [ "${ARCH}" == "amd64" ]; then \
     curl -sL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s;  \
     fi
 
-ENV DAPPER_RUN_ARGS --privileged -v kine-cache:/go/src/github.com/k3s-io/kine/.cache
+ENV DAPPER_RUN_ARGS --privileged -v kine-cache:/go/src/gitee.com/iscas-system/kine/.cache
 ENV DAPPER_ENV ARCH REPO TAG DRONE_TAG IMAGE_NAME CROSS SKIP_VALIDATE
-ENV DAPPER_SOURCE /go/src/github.com/k3s-io/kine/
+ENV DAPPER_SOURCE /go/src/gitee.com/iscas-system/kine/
 ENV DAPPER_OUTPUT ./bin ./dist
 ENV DAPPER_DOCKER_SOCKET true
 ENV HOME ${DAPPER_SOURCE}

@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/k3s-io/kine/pkg/endpoint"
-	"github.com/k3s-io/kine/pkg/metrics"
-	"github.com/k3s-io/kine/pkg/signals"
-	"github.com/k3s-io/kine/pkg/version"
+	"gitee.com/iscas-system/kine/pkg/endpoint"
+	"gitee.com/iscas-system/kine/pkg/metrics"
+	"gitee.com/iscas-system/kine/pkg/version"
+	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
